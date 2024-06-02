@@ -4,17 +4,22 @@ import pandas as pd
 import json
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QMessageBox
 
-
 def fetch_card_details(api_url):
     response = requests.get(api_url)
-    return response.json()
-
+    try:
+        return response.json()
+    except json.JSONDecodeError:
+        print("Error decoding JSON from the API response.")
+        return []
 
 def integrate_aspects(card_data, collection_df):
-    aspects_dict = {card['CardNumber']: card['Aspects'] for card in card_data}
-    collection_df['Aspects'] = collection_df['CardNumber'].map(aspects_dict)
+    if isinstance(card_data, list):  # Ensure card_data is a list
+        aspects_dict = {card['CardNumber']: card.get('Aspects', None) for card in card_data if 'CardNumber' in card}
+        collection_df['Aspects'] = collection_df['CardNumber'].map(aspects_dict)
+    else:
+        aspects_dict = {}
+        collection_df['Aspects'] = None
     return collection_df
-
 
 class AppDemo(QWidget):
     def __init__(self):
@@ -30,6 +35,7 @@ class AppDemo(QWidget):
         
         self.btn_save_json = QPushButton('Save Integrated JSON File')
         self.btn_save_json.clicked.connect(self.save_json)
+        self.btn_save_json.setVisible(False)
         self.layout.addWidget(self.btn_save_json)
         
         self.setLayout(self.layout)
@@ -43,6 +49,7 @@ class AppDemo(QWidget):
         if file_path:
             self.collection_df = pd.read_csv(file_path)
             QMessageBox.information(self, 'File Loaded', 'CSV File Loaded Successfully', QMessageBox.Ok)
+            self.btn_save_json.setVisible(True)
 
     def save_json(self):
         if not self.collection_df.empty:
@@ -56,13 +63,11 @@ class AppDemo(QWidget):
         else:
             QMessageBox.warning(self, 'No CSV Loaded', 'Please load a CSV file first.', QMessageBox.Ok)
 
-
 def main():
     app = QApplication(sys.argv)
     demo = AppDemo()
     demo.show()
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
