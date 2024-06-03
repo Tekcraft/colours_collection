@@ -1,0 +1,10 @@
+[1.0.0] - 2024-06-03
+Initial Release:
+Format Card Number: Implemented a format_card_number function to ensure card numbers have three digits with leading zeros if necessary.
+Fetch Aspects or Traits: Added functionality to fetch Aspects from the API using the card number. If Aspects are not available, the script falls back to Traits.
+Handle Missing Aspects/Traits: Added warnings for cases where neither Aspects nor Traits are available for a card number.
+CSV Loading: Added functionality to load a CSV file using a file dialog.
+JSON Saving: Added functionality to save the integrated collection to a JSON file using a file dialog.
+Aspect Conversion to Single Line: Modified the script to convert the Aspects list to a single-line string without square brackets. Used ", ".join() to concatenate the aspects or traits into a single string.
+User Interface: Created a simple user interface using PyQt5 with buttons to load CSV and save JSON files.
+Removed Debug Statements: Removed all print statements used for debugging to clean up the output.
