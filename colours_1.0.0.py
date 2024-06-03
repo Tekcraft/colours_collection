@@ -4,21 +4,46 @@ import pandas as pd
 import json
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QMessageBox
 
-def fetch_card_details(api_url):
-    response = requests.get(api_url)
+def fetch_card_details(card_number):
+    url = f'https://api.swu-db.com/cards/sor/{card_number}'
+    response = requests.get(url)
     try:
-        return response.json()
+        card_data = response.json()
+        return card_data
     except json.JSONDecodeError:
-        print("Error decoding JSON from the API response.")
-        return []
+        print(f"Error decoding JSON from API response for card number {card_number}.")
+        return {}
 
-def integrate_aspects(card_data, collection_df):
-    if isinstance(card_data, list):  # Ensure card_data is a list
-        aspects_dict = {card['CardNumber']: card.get('Aspects', None) for card in card_data if 'CardNumber' in card}
-        collection_df['Aspects'] = collection_df['CardNumber'].map(aspects_dict)
+def format_card_number(card_number):
+    """Ensure that the card number has three digits with leading zeros if necessary."""
+    card_number_str = str(card_number)
+    if len(card_number_str) == 1:
+        return '00' + card_number_str
+    elif len(card_number_str) == 2:
+        return '0' + card_number_str
     else:
-        aspects_dict = {}
-        collection_df['Aspects'] = None
+        return card_number_str
+
+def integrate_aspects(collection_df):
+    # Format the card numbers in the CSV to have three digits
+    collection_df['CardNumber'] = collection_df['CardNumber'].apply(format_card_number)
+
+    # Create a column for Aspects or Traits
+    collection_df['Aspects'] = None
+
+    for index, row in collection_df.iterrows():
+        card_number = row['CardNumber']
+        card_data = fetch_card_details(card_number)
+        
+        if 'Aspects' in card_data:
+            aspects = ", ".join(card_data['Aspects'])
+            collection_df.at[index, 'Aspects'] = aspects
+        elif 'Traits' in card_data:
+            traits = ", ".join(card_data['Traits'])
+            collection_df.at[index, 'Aspects'] = traits
+        else:
+            print(f"Warning: card number {card_number} has neither Aspects nor Traits in the API data.")
+    
     return collection_df
 
 class AppDemo(QWidget):
@@ -41,11 +66,10 @@ class AppDemo(QWidget):
         self.setLayout(self.layout)
         
         self.collection_df = pd.DataFrame()
-        self.card_data = fetch_card_details('https://api.swu-db.com/cards/sor')
 
     def load_csv(self):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select your collection CSV file", "", "CSV files (*.csv)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select your collection CSV file", "", "CSV Files (*.csv)", options=options)
         if file_path:
             self.collection_df = pd.read_csv(file_path)
             QMessageBox.information(self, 'File Loaded', 'CSV File Loaded Successfully', QMessageBox.Ok)
@@ -53,10 +77,10 @@ class AppDemo(QWidget):
 
     def save_json(self):
         if not self.collection_df.empty:
-            integrated_collection = integrate_aspects(self.card_data, self.collection_df)
+            integrated_collection = integrate_aspects(self.collection_df)
             
             options = QFileDialog.Options()
-            save_path, _ = QFileDialog.getSaveFileName(self, "Save the integrated JSON file", "", "JSON files (*.json)", options=options)
+            save_path, _ = QFileDialog.getSaveFileName(self, "Save the Integrated JSON File", "", "JSON Files (*.json)", options=options)
             if save_path:
                 integrated_collection.to_json(save_path, orient='records', indent=4)
                 QMessageBox.information(self, 'File Saved', 'Integrated JSON File Saved Successfully', QMessageBox.Ok)
