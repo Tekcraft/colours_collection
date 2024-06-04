@@ -58,10 +58,10 @@ class AppDemo(QWidget):
         self.btn_load_csv.clicked.connect(self.load_csv)
         self.layout.addWidget(self.btn_load_csv)
         
-        self.btn_save_json = QPushButton('Save Integrated JSON File')
-        self.btn_save_json.clicked.connect(self.save_json)
-        self.btn_save_json.setVisible(False)
-        self.layout.addWidget(self.btn_save_json)
+        self.btn_save_csv = QPushButton('Save Integrated CSV File')  # Cambiato qui
+        self.btn_save_csv.clicked.connect(self.save_csv)  # Cambiato qui
+        self.btn_save_csv.setVisible(False)  # Cambiato qui
+        self.layout.addWidget(self.btn_save_csv)  # Cambiato qui
         
         self.setLayout(self.layout)
         
@@ -73,17 +73,17 @@ class AppDemo(QWidget):
         if file_path:
             self.collection_df = pd.read_csv(file_path)
             QMessageBox.information(self, 'File Loaded', 'CSV File Loaded Successfully', QMessageBox.Ok)
-            self.btn_save_json.setVisible(True)
+            self.btn_save_csv.setVisible(True)  # Cambiato qui
 
-    def save_json(self):
+    def save_csv(self):  # Cambiato qui
         if not self.collection_df.empty:
             integrated_collection = integrate_aspects(self.collection_df)
             
             options = QFileDialog.Options()
-            save_path, _ = QFileDialog.getSaveFileName(self, "Save the Integrated JSON File", "", "JSON Files (*.json)", options=options)
+            save_path, _ = QFileDialog.getSaveFileName(self, "Save the Integrated CSV File", "", "CSV Files (*.csv)", options=options)  # Cambiato qui
             if save_path:
-                integrated_collection.to_json(save_path, orient='records', indent=4)
-                QMessageBox.information(self, 'File Saved', 'Integrated JSON File Saved Successfully', QMessageBox.Ok)
+                integrated_collection.to_csv(save_path, index=False)  # Cambiato qui
+                QMessageBox.information(self, 'File Saved', 'Integrated CSV File Saved Successfully', QMessageBox.Ok)  # Cambiato qui
         else:
             QMessageBox.warning(self, 'No CSV Loaded', 'Please load a CSV file first.', QMessageBox.Ok)
 
